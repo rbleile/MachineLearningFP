@@ -1,0 +1,14 @@
+Composite:  Maximum reflectivity in vertical volume above gauge:
+Error handling: if value is -99900.0 then we will assume no rain fall 
+	( composite reflectivity is the maximum of the dbz 
+		[ dbz is proportional to log_10(z/z_0) where z is the measured reflectivity and z_0 is the reflectivity or a 1mm diameter drop of water in a 1m^3 volume ])
+	-99900.0 means that ( echo below signal-to-noise threshold of radar.  In other words, the true value could be anywhere between -14 and -inf, but we don't know. ) so its < -14 which means z is really really small compared to z_0
+
+Composite == -99900.0 && expected != 0.0
+Counter: 319314
+Percent: 3.57256
+
+Composite < 0 && expected != 0.0
+Counter: 325747
+Percent: 3.64453
+
