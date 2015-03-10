@@ -33,7 +33,6 @@ int readWriteFile( char* inFileName, char* outFileName, bool train )
 		string feature;
 
 		vector< vector<string> > helper;
-		//cerr << endl;
 		while( getline( streamLine, feature, ',') )
 		{
 			stringstream streamSeries(feature);
@@ -49,7 +48,6 @@ int readWriteFile( char* inFileName, char* outFileName, bool train )
 	
 		for(int i = 0; i < helper[1].size(); i++)
 		{
-			//DEBUG cerr << "IndexN count: " << cNew;
 			vector<string> transpose;
 			for( int j = 0; j <= helper.size(); j++)
 			{
@@ -76,11 +74,7 @@ int readWriteFile( char* inFileName, char* outFileName, bool train )
 				else{
 						transpose.push_back( helper[j-1][i] );
 				}
-					//DEBUG cerr << helper.size() << " " << j-1 << endl;
-				//DEBUG cerr << " " << transpose[j];
 			}
-			//DEBUG cerr << endl << helper[0].size() << " " << i << endl;
-			//DEBUG cerr << endl;
 
 			splitLine.push_back( transpose );		
 			cNew++;
