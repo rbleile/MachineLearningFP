@@ -1,11 +1,15 @@
-all: data comp
+all: data tvt comp
 
 data:
-	g++ DataManipulator.C -o ../../Data/dataManip
+	g++ -O3 DataManipulator_Exp.C -o ../../Data/expander
+
+tvt:
+	g++ DataManipulator_Val_Test.C -o ../../Data/tvt
 
 comp:
 	g++ CompositCount.C -o ../../Data/compcount
 
 clean:
-	rm ../../Data/dataManip
-	rm ../../Data/dataManip
+	@rm ../../Data/expander
+	@rm ../../Data/tvt
+	@rm ../../Data/compcount
