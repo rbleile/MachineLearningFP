@@ -19,170 +19,105 @@ using namespace mlpack;
 using namespace mlpack::neighbor;
 using namespace mlpack::tree;
 
-/*
-int readFile( char* rFileName, char* qFileName )
+int readExpected( string expectedFileName, vector<float>* expected )
 {
 
-	ifstream file( rFileName );
+	ifstream file( expectedFileName.c_str() );
 
 	if( !file.is_open() )
 	{
-		cerr << "Input file failed to open" << endl;
+		cerr << "Expected file failed to open" << endl;
 		return 1;
 	}
 
-	vector< vector<string> > splitLine;
 	string line;
 
-	int cOld = 0;	
-	int cNew = 0;
-	
 	while( getline( file, line ) )
 	{
 		stringstream streamLine(line);
-		string feature;
-
-		vector< vector<string> > helper;
-		while( getline( streamLine, feature, ',') )
-		{
-			stringstream streamSeries(feature);
-			string value;
-
-			vector<string> lineVec;
-			while( getline( streamSeries, value, ' ') )
-			{
-				lineVec.push_back( value );
-			}
-			helper.push_back( lineVec );
-		}
-	
-		for(int i = 0; i < helper[1].size(); i++)
-		{
-			vector<string> transpose;
-			for( int j = 0; j <= helper.size(); j++)
-			{
-				if(j == 0)
-				{
-					transpose.push_back( helper[j][0] );
-				}
-				else if (j == 1)
-				{
-					if(cOld == 0)
-					{
-						transpose.push_back( "IdN" );
-					}
-					else
-					{
-						char buff[256];
-						sprintf(buff, "%d", cNew);
-						transpose.push_back( buff );
-					}
-				} 
-				else if(j == helper.size()){
-						transpose.push_back( helper[j - 1][0] );
-				}	
-				else{
-						transpose.push_back( helper[j-1][i] );
-				}
-			}
-
-			splitLine.push_back( transpose );		
-			cNew++;
-		}
-		cOld++;
+		expected->push_back( atof( line.c_str() ) );
 	}
 
 	file.close();
 
-	char outFileHeaders[256];
-	sprintf(outFileHeaders, "header_%s", outFileName );
-	
-	char outFileSolutions[256];
-	sprintf(outFileSolutions, "expected_%s", outFileName );
+	return 0;
+}
 
-	int size;
+int binData( int numN, int test_size, string outFile, arma::Mat<size_t> &neighbors, vector<float> *expected )
+{
+	//Need to loop over expected->size() and for each we need to loop over numN in neighbors( i, j ) and add to  bin where bins are 0 - 70?
+	int cumulativeBins;
+	int totBins;
+	int bins[71];
 
-	if( train )
+	stringstream ss;
+	ss << "prob_" << outFile;
+	string probOutFileName = ss.str();
+
+	ofstream file( probOutFileName.c_str() );
+
+	if( !file.is_open() )
 	{
-		size = splitLine[0].size()-1;
-	}
-	else
-	{
-		size = splitLine[0].size();
-	}
-
-	ofstream headers ( outFileHeaders );
-
-	if( !headers.is_open() )
-	{
-		cerr << "Headers file failed to open" << endl;
+		cerr << "Prob file failed to open" << endl;	
 		return 1;
 	}
 
-	for( int j = 0; j < size; j++ )
+	file << "Id" << endl;
+	for( int c = 0; c < 70; c++ )
 	{
-		headers << splitLine[0][j];
-		if( j+1 < size )
-		{
-			headers << ",";
-		} 
+		bins[c] = 0;
+		file << "\tP(y<" << c << ")";
 	}
-	headers << endl;
+	file << endl;
 
-	headers.close();
-
-	if( train )
+	for(int i = 0; i < test_size; i++)
 	{
-
-		ofstream solutions ( outFileSolutions );
-
-		if( !solutions.is_open() )
+		for( int j = 0; j < numN; j++ )
 		{
-			cerr << "Solutions file failed to open" << endl;
-			return 1;
-		}
-	
-		for( int i = 1; i < splitLine.size(); i++ )
-		{
-			solutions << splitLine[ i ][ size ];
-			solutions << endl;
-		}
-	
-		solutions.close();
-	
-	}
+			int index = neighbors( j, i );
+			float val = expected->at(index);
 
-	ofstream outfile ( outFileName );
-
-	if( !outfile.is_open() )
-	{
-		cerr << "Output file failed to open" << endl;
-		return 1;
-	}
-
-	for( int i = 1; i < splitLine.size(); i++ )
-	{
-		for( int j = 0; j < size; j++ )
-		{
-			outfile << splitLine[i][j];
-			if( j+1 < size )
+			if( val <= 0 )
 			{
-				outfile << ",";
-			} 
+				bins[ 0 ]++;
+			}
+			else if( val > 69 )
+			{
+				bins[ 70 ]++;	
+			}
+			else
+			{
+				bins[ (int) (val+1) ];
+			}
 		}
-		outfile << endl;
-	}	
 
-	outfile.close();
+		totBins = 0;
+
+		for( int c = 0; c < 70; c++ )
+		{
+			totBins += bins[c];
+		}
+
+		cumulativeBins = 0;
+
+		file << i;
+		for( int c = 0; c < 70; c++ )
+		{
+			cumulativeBins += bins[c];
+			file << "\t" << (float)cumulativeBins/(float)totBins;
+		}
+		file << endl;
+
+	}
 
 	return 0;
-
+	
 }
-*/
+
 int main( int argc, char** argv )
 {
 
-	if( argc != 5 )
+	if( argc != 6 )
 	{
 		cerr << "Need arguments: run function like this:\n./<executable> <input_file_name> <output_file_name> <is_train_data>" << endl;
 		cerr << "\t" << "<executable> should be pretty self explanatory." << endl;
@@ -190,10 +125,11 @@ int main( int argc, char** argv )
 		cerr << "\t" << "<test_file_name>(string) is the testing for output files." << endl;
 		cerr << "\t" << "<num_neighbors>(int) is the number of neighbors for nearest neighbor search." << endl;
 		cerr << "\t" << "<output_base_file_name>(string) is the basename for output files." << endl;
+		cerr << "\t" << "<expected_values_file_name>(string) is the name of file containing expected values for each data points." << endl;
 		return 1;
 	}
 
-	cerr << argv[1] << " " << argv[2] << " " << argv[3] << " " << argv[4] << endl;
+	cerr << argv[1] << " " << argv[2] << " " << argv[3] << " " << argv[4] << " " << argv[5] << endl;
 
 	cout << "Begining " << argv[3] << "-Nearest Neighbor Search Algorithm" << endl;
 
@@ -201,6 +137,7 @@ int main( int argc, char** argv )
 	string testFile  = argv[2];
 	int k = atoi( argv[3] );
 	string outputFileName = argv[4];
+	string expectedFilename = argv[5];
 
 	cout << "Reading data ( Load into arma::mat )" << endl;
 
@@ -275,6 +212,30 @@ int main( int argc, char** argv )
 
 	if( allknn )
 		delete allknn;
+
+
+	cout << "Reading Expected Data" << endl;
+
+	vector<float> Expected;
+
+	int stat1 = readExpected( expectedFilename, &Expected );
+	if( stat1 == 1 )
+	{
+		cerr << "Error reading file - exiting" << endl;
+		return 1;
+	}
+
+	cout << "Binning Data" << endl;
+	cout << "Binning Data and Writing Probabilities" << endl;
+	
+	int stat2 = binData( k, testData.n_cols, outputFileName, neighbors, &Expected );
+	if( stat2 == 1 )
+	{
+		cerr << "Error reading file - exiting" << endl;
+		return 1;
+	}
+
+	cout << "Probability file written - writting neighbors file" << endl;
 
 	bool saveFile = true;
 
