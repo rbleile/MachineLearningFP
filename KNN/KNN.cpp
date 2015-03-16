@@ -62,20 +62,28 @@ int binData( int numN, int test_size, string outFile, arma::Mat<size_t> &neighbo
 		return 1;
 	}
 
-	file << "Id" << endl;
-	for( int c = 0; c < 70; c++ )
+	file << "Id";
+	for( int c = 0; c < 71; c++ )
 	{
 		bins[c] = 0;
-		file << "\tP(y<" << c << ")";
+		if( c < 70 )
+			file << ",Predicted" << c;
 	}
 	file << endl;
 
 	for(int i = 0; i < test_size; i++)
 	{
+
+		for( int c = 0; c < 71; c++ )
+		{
+			bins[c] = 0;
+		}
+		
 		for( int j = 0; j < numN; j++ )
 		{
 			int index = neighbors( j, i );
 			float val = expected->at(index);
+
 
 			if( val <= 0 )
 			{
@@ -87,13 +95,14 @@ int binData( int numN, int test_size, string outFile, arma::Mat<size_t> &neighbo
 			}
 			else
 			{
-				bins[ (int) (val+1) ];
+				bins[ (int) (val+1) ]++;
 			}
 		}
 
 		totBins = 0;
 
-		for( int c = 0; c < 70; c++ )
+
+		for( int c = 0; c < 71; c++ )
 		{
 			totBins += bins[c];
 		}
@@ -104,7 +113,7 @@ int binData( int numN, int test_size, string outFile, arma::Mat<size_t> &neighbo
 		for( int c = 0; c < 70; c++ )
 		{
 			cumulativeBins += bins[c];
-			file << "\t" << (float)cumulativeBins/(float)totBins;
+			file << "," << (float)cumulativeBins/(float)totBins;
 		}
 		file << endl;
 
@@ -119,7 +128,7 @@ int main( int argc, char** argv )
 
 	if( argc != 6 )
 	{
-		cerr << "Need arguments: run function like this:\n./<executable> <input_file_name> <output_file_name> <is_train_data>" << endl;
+		cerr << "Need arguments: run function like this:\n" << endl;
 		cerr << "\t" << "<executable> should be pretty self explanatory." << endl;
 		cerr << "\t" << "<train_file_name>(string) is the training file in .csv format." << endl;
 		cerr << "\t" << "<test_file_name>(string) is the testing for output files." << endl;
@@ -142,11 +151,16 @@ int main( int argc, char** argv )
 	cout << "Reading data ( Load into arma::mat )" << endl;
 
 	arma::mat trainData;
-	arma::mat testData;
 	data::Load( trainFile, trainData, true);
+
+	cout << "Train Complete" << endl;
+
+	arma::mat testData;
 	data::Load( testFile,  testData,  true);
 
-	cout << "Data Read" << endl;
+	cout << "Test Complete" << endl;
+
+	cout << "Data Read: " << k << " " << trainData.n_cols << endl;
 
 	if (k > trainData.n_cols)
 	{
